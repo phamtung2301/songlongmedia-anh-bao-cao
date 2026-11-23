@@ -44,6 +44,9 @@ window._GEN = (function () {
     if (ex.length) s += ' (' + esc(ex.join('; ')) + ')';
     return s;
   }
+  const SH = { tws: 'true wireless', btover: 'chụp tai Bluetooth', open: 'open-ear, vòng cổ', game: 'gaming', iem: 'in-ear có dây', earbud: 'earbud có dây', wover: 'chụp tai có dây', btother: 'Bluetooth khác', wother: 'có dây khác' };
+  const bare = p => '<a href="' + esc(p.u) + '">' + esc(p.model) + '</a>';
+  const ipw = p => { const m = p.full.match(/\bIP(X|[0-6])([0-8])\b/i); return m ? { r: m[0].toUpperCase(), w: +m[2] } : null; };
   function build(b, ty, intro) {
     const S = b.items.filter(it => /InStock|PreOrder/i.test(window._CR.prod[it.u] || ''));
     if (!S.length) return null;
@@ -82,17 +85,19 @@ window._GEN = (function () {
     const Q = [];
     const anc = pick(p => p.t.includes('anc') || /chống ồn|\bANC\b/i.test(p.full), 4);
     const studio = pick(p => p.t.includes('studio') || /kiểm âm|monitor/i.test(p.full), 4);
-    const sport = pick(p => p.t.includes('open') || p.t.includes('neck') || /IPX[5-8]|IP[5-6][5-8]/i.test(p.full), 4);
+    const water = pick(p => { const x = ipw(p); return x && x.w >= 5; }, 4);
+    const openp = pick(p => p.t.includes('open') || p.t.includes('neck') || /open-ear|truyền xương/i.test(p.full), 4);
     const game = G.game ? G.game.filter(p => !p.cond).slice(0, 3) : [];
-    if (anc.length) Q.push('<li><strong>Cần chống ồn khi đi lại, làm việc:</strong> ' + anc.map(link).join(', ') + '.</li>');
-    if (sport.length) Q.push('<li><strong>Tập luyện, chạy bộ:</strong> ' + sport.map(link).join(', ') + '.</li>');
-    if (studio.length) Q.push('<li><strong>Kiểm âm, thu âm:</strong> ' + studio.map(link).join(', ') + '.</li>');
-    if (game.length) Q.push('<li><strong>Chơi game:</strong> ' + game.map(link).join(', ') + '.</li>');
+    if (anc.length) Q.push('<li><strong>Cần chống ồn khi đi lại, làm việc:</strong> ' + anc.map(bare).join(', ') + '.</li>');
+    if (water.length) Q.push('<li><strong>Hay ra mồ hôi, đi mưa (chống nước từ IPX5/IP55):</strong> ' + water.map(p => bare(p) + ' (' + ipw(p).r + ')').join(', ') + '.</li>');
+    if (openp.length) Q.push('<li><strong>Muốn nghe được tiếng xung quanh khi chạy bộ, đạp xe:</strong> ' + openp.map(bare).join(', ') + '.</li>');
+    if (studio.length) Q.push('<li><strong>Kiểm âm, thu âm:</strong> ' + studio.map(bare).join(', ') + '.</li>');
+    if (game.length) Q.push('<li><strong>Chơi game:</strong> ' + game.map(bare).join(', ') + '.</li>');
     if (G.iem && G.iem.length) Q.push('<li><strong>Nghe nhạc bằng tai nghe có dây:</strong> điện thoại không có jack 3.5mm cần thêm <a href="/dongle-dac-amp.html">dongle DAC</a> cổng USB-C hoặc Lightning.</li>');
     if (Q.length >= 2) h += '<h2>Chọn nhanh tai nghe ' + esc(name) + ' theo nhu cầu</h2>\n<ul>\n' + Q.join('\n') + '\n</ul>\n';
     // FAQ
     const F = [];
-    const cnt = groups.filter(k => k !== 'acc').map(k => G[k].length + ' ' + LAB[k].replace('Tai nghe ', '').toLowerCase());
+    const cnt = groups.filter(k => k !== 'acc').map(k => G[k].length + ' ' + SH[k]);
     F.push(['Tai nghe ' + name + ' tại Song Long Media có những loại nào?', 'Hiện có ' + main + ' mẫu đang bán: ' + cnt.join(', ') + '. Danh sách cập nhật theo hàng thực tế ở phần sản phẩm phía trên.']);
     if (anc.length) F.push(['Tai nghe ' + name + ' nào có chống ồn?', 'Các mẫu có chống ồn chủ động (ANC) đang bán gồm ' + anc.map(p => p.model).join(', ') + '.']);
     if (all.some(p => p.cond)) F.push(['Hàng like new, nobox khác gì hàng mới?', 'Tình trạng máy (like new, nobox) ghi rõ trên tên sản phẩm; giá thấp hơn hàng mới. Thời gian bảo hành của từng sản phẩm ghi ở trang sản phẩm.']);
