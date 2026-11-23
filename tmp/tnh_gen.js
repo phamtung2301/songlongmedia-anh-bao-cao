@@ -9,6 +9,10 @@ window._GEN = (function () {
     let n = it.n.replace(/^Tai [Nn]ghe\s+/, '').trim();
     const i = n.indexOf('(');
     let model = (i > 0 ? n.slice(0, i) : n).trim();
+    const nb = brand.toLowerCase().replace(/[^a-z0-9]/g, '');
+    { let k = 0, j = 0; const ml = model.toLowerCase();
+      while (j < ml.length && k < nb.length) { if (/[a-z0-9]/.test(ml[j])) { if (ml[j] !== nb[k]) break; k++; } j++; }
+      if (k === nb.length && nb.length > 2 && (j >= ml.length || !/[a-z0-9]/.test(ml[j]))) model = brand + model.slice(j); }
     let spec = i > 0 ? n.slice(i + 1).replace(/\)\s*$/, '') : '';
     const segs = spec.split('|').map(s => s.trim()).filter(Boolean);
     const cond = segs.find(s => /like\s*new|nobox|un-?seal|refurbished|99%/i.test(s)) || (/like\s*new|nobox/i.test(n) ? 'Like New' : '');
@@ -48,7 +52,14 @@ window._GEN = (function () {
   const bare = p => '<a href="' + esc(p.u) + '">' + esc(p.model) + '</a>';
   const ipw = p => { const m = p.full.match(/\bIP(X|[0-6])([0-8])\b/i); return m ? { r: m[0].toUpperCase(), w: +m[2] } : null; };
   function build(b, ty, intro) {
-    const S = b.items.filter(it => /InStock|PreOrder/i.test(window._CR.prod[it.u] || ''));
+    const AD = (window._ADR || {});
+    const idOf = it => ((it.img.match(/\/250_(\d+)[_-]/) || it.img.match(/\/(\d+)[_-]/) || [])[1]);
+    const S = b.items.filter(it => {
+      if (!/InStock|PreOrder/i.test(window._CR.prod[it.u] || '')) return false;
+      if ((window._EXU || []).includes(it.u)) return false;
+      const a = AD[idOf(it)]; if (!a) return false;
+      return a.q > 0 && a.show && a.age <= (window._MAXAGE || 540);
+    });
     if (!S.length) return null;
     const name = b.name.replace(/\s*\(.*\)$/, '');
     const G = {};
@@ -84,7 +95,7 @@ window._GEN = (function () {
     const pick = (f, n) => all.filter(f).filter(p => !p.cond).slice(0, n);
     const Q = [];
     const anc = pick(p => p.t.includes('anc') || /chống ồn|\bANC\b/i.test(p.full), 4);
-    const studio = pick(p => p.t.includes('studio') || /kiểm âm|monitor/i.test(p.full), 4);
+    const studio = pick(p => (p.t.includes('studio') || /kiểm âm|monitor/i.test(p.full)) && !/bluetooth/i.test(p.full), 4);
     const water = pick(p => { const x = ipw(p); return x && x.w >= 5; }, 4);
     const openp = pick(p => p.t.includes('open') || p.t.includes('neck') || /open-ear|truyền xương/i.test(p.full), 4);
     const game = G.game ? G.game.filter(p => !p.cond).slice(0, 3) : [];
