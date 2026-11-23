@@ -4,7 +4,7 @@ window._GEN = (function () {
   const BAD = ['cực kỳ', 'hoàn hảo', 'đỉnh cao', 'tốt nhất', 'tuyệt vời', 'nâng tầm', 'không chỉ', 'đáng kinh ngạc', 'chất âm'];
   const BRANDLINK = { '490': '/brand/noble-audio', '702': '/brand/moondrop', '462': '/brand/hifiman' };
   const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const ACC = /(lẻ 1 bên|tai lẻ|dock sạc|eartip|ear tip|đệm tai|earpad|\bcáp\b|dây cáp|hộp sạc|case |bao da|túi đựng)/i;
+  const ACC = /(1 bên|tai lẻ|dock sạc|eartip|ear tip|đệm tai|earpad|^cáp|dây cáp|hộp sạc|case |bao da|túi đựng)/i;
   function parse(it, brand) {
     let n = it.n.replace(/^Tai [Nn]ghe\s+/, '').trim();
     const i = n.indexOf('(');
@@ -13,7 +13,7 @@ window._GEN = (function () {
     { let k = 0, j = 0; const ml = model.toLowerCase();
       while (j < ml.length && k < nb.length) { if (/[a-z0-9]/.test(ml[j])) { if (ml[j] !== nb[k]) break; k++; } j++; }
       if (k === nb.length && nb.length > 2 && (j >= ml.length || !/[a-z0-9]/.test(ml[j]))) model = brand + model.slice(j); }
-    let spec = i > 0 ? n.slice(i + 1).replace(/\)\s*$/, '') : '';
+    let spec = i > 0 ? n.slice(i + 1).replace(/\)\s*$/, '').replace(/\)\s*\(/g, ' | ') : '';
     const segs = spec.split('|').map(s => s.trim()).filter(Boolean);
     const cond = segs.find(s => /like\s*new|nobox|un-?seal|refurbished|99%/i.test(s)) || (/like\s*new|nobox/i.test(n) ? 'Like New' : '');
     const keep = segs.filter(s => !/like\s*new|nobox|un-?seal|refurbished|99%|phân phối|chính hãng|bản quốc tế|mã vn/i.test(s)).slice(0, 3);
@@ -22,7 +22,7 @@ window._GEN = (function () {
   function kind(it, ty) {
     const t = ty[it.u] || [];
     const bt = /bluetooth|true wireless|wireless|không dây|2\.4ghz|dongle usb/i.test(it.n) || t.includes('tws') || t.includes('bt');
-    if (ACC.test(it.n)) return 'acc';
+    if (ACC.test(it.n.replace(/^Tai [Nn]ghe\s+/, '').split(' (')[0]) || /^(lẻ|1 bên|hộp sạc)/i.test(it.n)) return 'acc';
     if (t.includes('game') || /gaming/i.test(it.n)) return 'game';
     if (t.includes('tws')) return 'tws';
     if (t.includes('open') || t.includes('neck') || /open-ear|truyền xương|neckband|vòng cổ/i.test(it.n)) return 'open';
@@ -40,6 +40,7 @@ window._GEN = (function () {
   const ORD = ['btover', 'tws', 'open', 'game', 'iem', 'earbud', 'wover', 'btother', 'wother', 'acc'];
   const ALTK = { tws: 'Tai nghe true wireless', btover: 'Tai nghe chụp tai Bluetooth', open: 'Tai nghe open-ear', game: 'Tai nghe gaming', iem: 'Tai nghe in-ear có dây', earbud: 'Tai nghe earbud', wover: 'Tai nghe chụp tai', btother: 'Tai nghe Bluetooth', wother: 'Tai nghe' };
   function link(p) {
+    if (p.acc) return '<a href="' + esc(p.u) + '">' + esc(p.full.length > 90 ? p.full.slice(0, 88).replace(/\s+\S*$/, '') + '…' : p.full) + '</a>';
     let s = '<a href="' + esc(p.u) + '">' + esc(p.model) + '</a>';
     const ex = [];
     if (p.keep.length) ex.push(p.keep.join(', '));
@@ -61,17 +62,18 @@ window._GEN = (function () {
       return a.q > 0 && a.show && a.age <= (window._MAXAGE || 540);
     });
     if (!S.length) return null;
+    if (S.every(it => kind(it, ty) === 'acc')) return null;
     const name = b.name.replace(/\s*\(.*\)$/, '');
     const G = {};
     for (const it of S) {
       const p = parse(it, name); p.pre = /PreOrder/i.test(window._CR.prod[it.u]); p.t = ty[it.u] || [];
-      const k = kind(it, ty); (G[k] = G[k] || []).push(p);
+      const k = kind(it, ty); p.acc = k === 'acc'; (G[k] = G[k] || []).push(p);
     }
     const main = S.length - (G.acc ? G.acc.length : 0);
     let h = '';
     h += '<h2>Tai nghe ' + esc(name) + ' tại Song Long Media có những mẫu nào?</h2>\n<p>';
     if (intro) h += esc(intro) + ' ';
-    h += 'Hiện Song Long Media có ' + main + ' mẫu tai nghe ' + esc(name) + ' đang bán' + (G.acc ? ', kèm tai lẻ và phụ kiện thay thế' : '') + '; danh sách dưới đây chia theo kiểu đeo để dễ chọn.';
+    h += 'Hiện Song Long Media có ' + main + ' mẫu tai nghe ' + esc(name) + ' đang bán' + (G.acc ? ', kèm tai lẻ và phụ kiện thay thế' : '') + (main > 3 ? '; danh sách dưới đây chia theo kiểu đeo để dễ chọn.' : '.');
     if (BRANDLINK[b.id]) h += ' Lịch sử và các dòng sản phẩm khác của hãng xem tại <a href="' + BRANDLINK[b.id] + '">trang thương hiệu ' + esc(name) + '</a>.';
     h += '</p>\n';
     const imgs = []; const used = new Set();
